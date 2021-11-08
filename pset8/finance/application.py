@@ -24,6 +24,7 @@ def after_request(response):
     response.headers["Pragma"] = "no-cache"
     return response
 
+
 # Custom filter
 app.jinja_env.filters["usd"] = usd
 
@@ -46,34 +47,50 @@ if not os.environ.get("API_KEY"):
 def index():
     """Show portfolio of stocks"""
     # Query infos from database
-    rows = db.execute("SELECT * FROM stocks WHERE user_id = :user", user=session["user_id"])
-    cash = db.execute("SELECT cash FROM users WHERE id = :user", user=session["user_id"])[0]['cash']
+    rows = db.execute(
+        "SELECT * FROM stocks WHERE user_id = :user", user=session["user_id"]
+    )
+    cash = db.execute(
+        "SELECT cash FROM users WHERE id = :user", user=session["user_id"]
+    )[0]["cash"]
 
     # pass a list of lists to the template page, template extracts the data to toable
     total = cash
     stocks = []
     for index, row in enumerate(rows):
-        stock_info = lookup(row['symbol'])
+        stock_info = lookup(row["symbol"])
 
         # create a list with all the info about the stock and append it to a list of every stock owned by the user
-        stocks.append(list((stock_info['symbol'], stock_info['name'], row['amount'], stock_info['price'], round(stock_info['price'] * row['amount'], 2))))
+        stocks.append(
+            list(
+                (
+                    stock_info["symbol"],
+                    stock_info["name"],
+                    row["amount"],
+                    stock_info["price"],
+                    round(stock_info["price"] * row["amount"], 2),
+                )
+            )
+        )
         total += stocks[index][4]
 
-    return render_template("index.html", stocks=stocks, cash=round(cash, 2), total=round(total, 2))
+    return render_template(
+        "index.html", stocks=stocks, cash=round(cash, 2), total=round(total, 2)
+    )
 
 
 @app.route("/buy", methods=["GET", "POST"])
 @login_required
 def buy():
     """Buy shares of stock"""
-     # User reached route via POST (as by submitting a form via POST)
+    # User reached route via POST (as by submitting a form via POST)
     if request.method == "POST":
         # Obtain the data necessary for the transaction
         amount = int(request.form.get("amount"))
         symbol = lookup(request.form.get("symbol"))
 
         if symbol:
-            symbol = symbol['symbol']
+            symbol = symbol["symbol"]
         else:
             return
 
@@ -82,8 +99,10 @@ def buy():
             return apology("Could not find the stock")
 
         # Calculate total value of the transaction
-        price = lookup(symbol)['price']
-        cash = db.execute("SELECT cash FROM users WHERE id = :user", user=session["user_id"])[0]['cash']
+        price = lookup(symbol)["price"]
+        cash = db.execute(
+            "SELECT cash FROM users WHERE id = :user", user=session["user_id"]
+        )[0]["cash"]
         cash_after = cash - price * float(amount)
 
         # Check if current cash is enough for transaction
@@ -91,24 +110,48 @@ def buy():
             return apology("You don't have enough money for this transaction")
 
         # Check if user already has one or more stocks from the same company
-        stock = db.execute("SELECT amount FROM stocks WHERE user_id = :user AND symbol = :symbol", user=session["user_id"], symbol=symbol)
+        stock = db.execute(
+            "SELECT amount FROM stocks WHERE user_id = :user AND symbol = :symbol",
+            user=session["user_id"],
+            symbol=symbol,
+        )
 
         # Insert new row into the stock table
         if not stock:
-            db.execute("INSERT INTO stocks(user_id, symbol, amount) VALUES (:user, :symbol, :amount)", user=session["user_id"], symbol=symbol, amount=amount)
+            db.execute(
+                "INSERT INTO stocks(user_id, symbol, amount) VALUES (:user, :symbol, :amount)",
+                user=session["user_id"],
+                symbol=symbol,
+                amount=amount,
+            )
 
         # update row into the stock table
         else:
-            amount += stock[0]['amount']
+            amount += stock[0]["amount"]
 
-            db.execute("UPDATE stocks SET amount = :amount WHERE user_id = :user AND symbol = :symbol", user=session["user_id"], symbol=symbol, amount=amount)
+            db.execute(
+                "UPDATE stocks SET amount = :amount WHERE user_id = :user AND symbol = :symbol",
+                user=session["user_id"],
+                symbol=symbol,
+                amount=amount,
+            )
 
         # update user's cash
-        db.execute("UPDATE users SET cash = :cash WHERE id = :user", cash=cash_after, user=session["user_id"])
+        db.execute(
+            "UPDATE users SET cash = :cash WHERE id = :user",
+            cash=cash_after,
+            user=session["user_id"],
+        )
 
         # Update history table
-        db.execute("INSERT INTO transactions(user_id, symbol, amount, value, date) VALUES (:user, :symbol, :amount, :value, :date)",
-                user=session["user_id"], symbol=symbol, amount=amount, value=round(price*float(amount)), date=datetime.now().strftime("%d/%m/%Y %H:%M:%S"))
+        db.execute(
+            "INSERT INTO transactions(user_id, symbol, amount, value, date) VALUES (:user, :symbol, :amount, :value, :date)",
+            user=session["user_id"],
+            symbol=symbol,
+            amount=amount,
+            value=round(price * float(amount)),
+            date=datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
+        )
 
         # Redirect user to index page with a success message
         flash("Bought!")
@@ -124,15 +167,27 @@ def buy():
 def history():
     """Show history of transactions"""
     # query database with the transactions history
-    rows = db.execute("SELECT * FROM transactions WHERE user_id = :user", user=session["user_id"])
+    rows = db.execute(
+        "SELECT * FROM transactions WHERE user_id = :user", user=session["user_id"]
+    )
 
     # pass a list of lists to the template page, template is going to iterate it to extract the data into a table
     transactions = []
     for row in rows:
-        stock_info = lookup(row['symbol'])
+        stock_info = lookup(row["symbol"])
 
         # create a list with all the info about the transaction and append it to a list of every stock transaction
-        transactions.append(list((stock_info['symbol'], stock_info['name'], row['amount'], row['value'], row['date'])))
+        transactions.append(
+            list(
+                (
+                    stock_info["symbol"],
+                    stock_info["name"],
+                    row["amount"],
+                    row["value"],
+                    row["date"],
+                )
+            )
+        )
 
     # redirect user to index page
     return render_template("history.html", transactions=transactions)
@@ -157,11 +212,15 @@ def login():
             return apology("must provide password", 403)
 
         # Query database for username
-        rows = db.execute("SELECT * FROM users WHERE username = :username",
-                          username=request.form.get("username"))
+        rows = db.execute(
+            "SELECT * FROM users WHERE username = :username",
+            username=request.form.get("username"),
+        )
 
         # Ensure username exists and password is correct
-        if len(rows) != 1 or not check_password_hash(rows[0]["hash"], request.form.get("password")):
+        if len(rows) != 1 or not check_password_hash(
+            rows[0]["hash"], request.form.get("password")
+        ):
             return apology("invalid username and/or password", 403)
 
         # Remember which user has logged in
@@ -228,16 +287,24 @@ def register():
             return apology("passwords must match", 403)
 
         # Query database for username
-        elif db.execute("SELECT * FROM users WHERE username = :username",
-            username=request.form.get("username")):
+        elif db.execute(
+            "SELECT * FROM users WHERE username = :username",
+            username=request.form.get("username"),
+        ):
             return apology("Username already taken", 403)
 
         # Insert user and hash of the password into the table
-        db.execute("INSERT INTO users(username, hash) VALUES (:username, :hash)",
-            username=request.form.get("username"), hash=generate_password_hash(request.form.get("password")))
+        db.execute(
+            "INSERT INTO users(username, hash) VALUES (:username, :hash)",
+            username=request.form.get("username"),
+            hash=generate_password_hash(request.form.get("password")),
+        )
 
         # Query database for username
-        rows = db.execute("SELECT * FROM users WHERE username = :username", username=request.form.get("username"))
+        rows = db.execute(
+            "SELECT * FROM users WHERE username = :username",
+            username=request.form.get("username"),
+        )
 
         # Remember which user has logged in
         session["user_id"] = rows[0]["id"]
@@ -249,6 +316,7 @@ def register():
     else:
         return render_template("register.html")
 
+
 @app.route("/sell", methods=["GET", "POST"])
 @login_required
 def sell():
@@ -259,15 +327,23 @@ def sell():
         amount = int(request.form.get("amount"))
         symbol = request.form.get("symbol")
         price = lookup(symbol)["price"]
-        value = round(price*float(amount))
+        value = round(price * float(amount))
 
         # Update stocks table
-        amount_before = db.execute("SELECT amount FROM stocks WHERE user_id = :user AND symbol = :symbol", symbol=symbol, user=session["user_id"])[0]['amount']
+        amount_before = db.execute(
+            "SELECT amount FROM stocks WHERE user_id = :user AND symbol = :symbol",
+            symbol=symbol,
+            user=session["user_id"],
+        )[0]["amount"]
         amount_after = amount_before - amount
 
         # delete stock from table if we sold every unit we had
         if amount_after == 0:
-            db.execute("DELETE FROM stocks WHERE user_id = :user AND symbol = :symbol", symbol=symbol, user=session["user_id"])
+            db.execute(
+                "DELETE FROM stocks WHERE user_id = :user AND symbol = :symbol",
+                symbol=symbol,
+                user=session["user_id"],
+            )
 
         # stop the transaction if the user does not have enough stocks
         elif amount_after < 0:
@@ -275,17 +351,34 @@ def sell():
 
         # otherwise update with new value
         else:
-            db.execute("UPDATE stocks SET amount = :amount WHERE user_id = :user AND symbol = :symbol", symbol=symbol, user=session["user_id"], amount=amount_after)
+            db.execute(
+                "UPDATE stocks SET amount = :amount WHERE user_id = :user AND symbol = :symbol",
+                symbol=symbol,
+                user=session["user_id"],
+                amount=amount_after,
+            )
 
         # calculate and update user's cash
-        cash = db.execute("SELECT cash FROM users WHERE id = :user", user=session["user_id"])[0]['cash']
+        cash = db.execute(
+            "SELECT cash FROM users WHERE id = :user", user=session["user_id"]
+        )[0]["cash"]
         cash_after = cash + price * float(amount)
 
-        db.execute("UPDATE users SET cash = :cash WHERE id = :user", cash=cash_after, user=session["user_id"])
+        db.execute(
+            "UPDATE users SET cash = :cash WHERE id = :user",
+            cash=cash_after,
+            user=session["user_id"],
+        )
 
         # Update history table
-        db.execute("INSERT INTO transactions(user_id, symbol, amount, value, date) VALUES (:user, :symbol, :amount, :value, :date)",
-                user=session["user_id"], symbol=symbol, amount=-amount, value=value, date=datetime.now().strftime("%d/%m/%Y %H:%M:%S"))
+        db.execute(
+            "INSERT INTO transactions(user_id, symbol, amount, value, date) VALUES (:user, :symbol, :amount, :value, :date)",
+            user=session["user_id"],
+            symbol=symbol,
+            amount=-amount,
+            value=value,
+            date=datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
+        )
 
         # Redirect user to home page with success message
         flash("Sold!")
@@ -295,12 +388,15 @@ def sell():
     else:
 
         # query database with the transactions history
-        rows = db.execute("SELECT symbol, amount FROM stocks WHERE user_id = :user", user=session["user_id"])
+        rows = db.execute(
+            "SELECT symbol, amount FROM stocks WHERE user_id = :user",
+            user=session["user_id"],
+        )
 
         # create a dictionary with the availability of the stocks
         stocks = {}
         for row in rows:
-            stocks[row['symbol']] = row['amount']
+            stocks[row["symbol"]] = row["amount"]
 
         return render_template("sell.html", stocks=stocks)
 

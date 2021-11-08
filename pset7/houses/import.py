@@ -25,7 +25,7 @@ with open(csvfile, "r") as file:
                 """,
                 name[0],
                 house,
-                birth
+                birth,
             )
 
         elif len(name) == 2:
@@ -36,7 +36,7 @@ with open(csvfile, "r") as file:
                 name[0],
                 name[1],
                 house,
-                birth
+                birth,
             )
 
         elif len(name) == 3:
@@ -48,6 +48,5 @@ with open(csvfile, "r") as file:
                 name[1],
                 name[2],
                 house,
-                birth
+                birth,
             )
-

@@ -24,7 +24,7 @@ if len(sys.argv) == 3:
     valuelist = []
     for q in range(len(i)):  # the small CSV i = 3. so iterates for each nucleotide.
 
-        res = max(re.findall('((?:' + re.escape(i[q]) + ')*)', data), key=len)
+        res = max(re.findall("((?:" + re.escape(i[q]) + ")*)", data), key=len)
 
         max_counter = len(res) / len(i[q])
 

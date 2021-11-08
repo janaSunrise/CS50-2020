@@ -22,5 +22,6 @@ def make_pyramid(height):
 
         spaces -= 1
 
+
 size = get_input()
 make_pyramid(size)

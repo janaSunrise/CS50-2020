@@ -14,7 +14,11 @@ words = len(text.split(" "))
 sentences = len(re.split(r"\.|!|\?", text))
 
 # calculate the index
-index = 0.0588 * (100 * float(letters) / float(words)) - 0.296 * (100 * float(sentences) / float(words)) - 15.8
+index = (
+    0.0588 * (100 * float(letters) / float(words))
+    - 0.296 * (100 * float(sentences) / float(words))
+    - 15.8
+)
 
 # convert index to integer
 index = round(index)

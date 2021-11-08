@@ -15,7 +15,7 @@ def luhn_check(card_number):
     checksum += sum(odd_digits)
 
     for d in even_digits:
-        checksum += sum(digits_of(d*2))
+        checksum += sum(digits_of(d * 2))
 
     return (checksum % 10) == 0
 
