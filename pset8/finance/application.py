@@ -1,20 +1,21 @@
 import os
+from datetime import datetime
+from tempfile import mkdtemp
 
 from cs50 import SQL
-from flask import Flask, flash, jsonify, redirect, render_template, request, session
+from flask import Flask, flash, redirect, render_template, request, session
 from flask_session import Session
-from tempfile import mkdtemp
 from werkzeug.exceptions import default_exceptions, HTTPException, InternalServerError
 from werkzeug.security import check_password_hash, generate_password_hash
 
 from helpers import apology, login_required, lookup, usd
-from datetime import datetime
 
 # Configure application
 app = Flask(__name__)
 
 # Ensure templates are auto-reloaded
 app.config["TEMPLATES_AUTO_RELOAD"] = True
+
 
 # Ensure responses aren't cached
 @app.after_request
@@ -47,20 +48,17 @@ if not os.environ.get("API_KEY"):
 def index():
     """Show portfolio of stocks"""
     # Query infos from database
-    rows = db.execute(
-        "SELECT * FROM stocks WHERE user_id = :user", user=session["user_id"]
-    )
-    cash = db.execute(
-        "SELECT cash FROM users WHERE id = :user", user=session["user_id"]
-    )[0]["cash"]
+    rows = db.execute("SELECT * FROM stocks WHERE user_id = :user", user=session["user_id"])
+    cash = db.execute("SELECT cash FROM users WHERE id = :user", user=session["user_id"])[0]["cash"]
 
     # pass a list of lists to the template page, template extracts the data to toable
     total = cash
     stocks = []
+
     for index, row in enumerate(rows):
         stock_info = lookup(row["symbol"])
 
-        # create a list with all the info about the stock and append it to a list of every stock owned by the user
+        # Create a list with info about stock and add it to the list of stocks owned by the user.
         stocks.append(
             list(
                 (
@@ -74,9 +72,7 @@ def index():
         )
         total += stocks[index][4]
 
-    return render_template(
-        "index.html", stocks=stocks, cash=round(cash, 2), total=round(total, 2)
-    )
+    return render_template("index.html", stocks=stocks, cash=round(cash, 2), total=round(total, 2))
 
 
 @app.route("/buy", methods=["GET", "POST"])
